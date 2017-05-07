@@ -15,6 +15,9 @@ csvwriter = csv.writer(csvfile, delimiter='\t', quotechar='\'', quoting=csv.QUOT
 def nsToS(ns):
 	return unicode(ns).encode('ascii','replace')
 
+def formatS(s):
+	return s.replace("_", " ").replace("%27", "'")
+
 def getSkinsFromGallery(gallery, champName, typeName):
 	for skin in gallery.find_all('div', class_="lightbox-caption"):
 		name = nsToS(skin.contents[0]).strip()
@@ -30,7 +33,7 @@ def getSkinsFromGallery(gallery, champName, typeName):
 		else:
 			date = nsToS(r.string).split("/")[-1].replace('?','')
 		# print champName, name, str(rp), date, typeName
-		csvwriter.writerow([champName, name, str(rp), date, typeName])
+		csvwriter.writerow([formatS(champName), name, str(rp), date, typeName])
 
 
 def getChampSkins(champSkinsSoup, champName):
@@ -47,6 +50,7 @@ for tag in mainPageSoup.find("ol", class_="champion_roster").find_all('a'):
 	champSkinsUrl = baseUrl + tag['href'] + "/Skins"
 	champSkinsSoup = BeautifulSoup(urllib2.urlopen(champSkinsUrl), "html.parser")
 	getChampSkins(champSkinsSoup, champName)
+	print "Done with " + champName
 
 csvfile.close()
 print "done"
