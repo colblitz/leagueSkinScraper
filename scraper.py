@@ -28,23 +28,47 @@ champSkinCount = {}
 champSkinLatest = {}
 
 def getSkinsFromGallery(gallery, champName, typeName):
-	for skin in gallery.find_all('div', class_="lightbox-caption"):
-		name = nsToS(skin.contents[0]).strip()
+	for skin in gallery.find_all('div', class_="skin-icon"):
+		caption = skin.next_sibling.next_sibling
+		nameDiv = caption.find('div', style="float:left")
+		name = nsToS(nameDiv.contents[0]).strip()
 		rp = 0
 		date = ""
-		r = skin.find('div', style="float:right")
-		if r.span:
-			if r.span.a.next_sibling:
-				rp = int(unicode(r.span.a.next_sibling.replace(',','')))
+
+	# for skin in gallery.find_all('div', class_="lightbox-caption"):
+	# 	name = nsToS(skin.contents[0]).strip()
+	# 	rp = 0
+	# 	date = ""
+
+		# find rp and date
+		r = caption.find('div', style="float:right")
+		if r:
+			price = r.find('a', class_="image image-thumbnail link-internal")
+			if price:
+				rp = price["title"]
+				for c in ["RP", "Prestige tokens", "Rare Gems", "Blue Essence"]:
+					rp = rp.replace(c, "")
+				rp = int(rp.strip())
+				date = nsToS(r.contents[1].replace("/", "").strip())
 			else:
-				rp = int(unicode(r.span.previous_sibling.replace(',','')))
-			if rp == 10:
-				# hextech stuff will have a ')?/?13-Apr-2017'
-				date = nsToS(getNextSibling(r.span, 5)).replace(")","").replace("?","").replace("/","").strip()
-			else:
-				date = nsToS(r.span.next_sibling)[3:]
+				date = nsToS(r.contents[0].replace("/", "").strip())
 		else:
-			date = nsToS(r.string).split("/")[-1].replace('?','')
+			print "No caption found"
+			print r
+		# if r.span:
+		# 	print r.span
+		# 	if r.span.a.next_sibling:
+		# 		rp = int(unicode(r.span.a.next_sibling.replace(',','')))
+		# 	else:
+		# 		print r.span.previous_sibling
+		# 		rp = int(unicode(r.span.previous_sibling.replace(',','')))
+		# 	if rp == 10:
+		# 		# hextech stuff will have a ')?/?13-Apr-2017'
+		# 		date = nsToS(getNextSibling(r.span, 5)).replace(")","").replace("?","").replace("/","").strip()
+		# 	else:
+		# 		date = nsToS(r.span.next_sibling)[3:]
+		# else:
+		# 	date = nsToS(r.string).split("/")[-1].replace('?','')
 
 		# Neo PAX Sivir
 		if champName == "Sivir":
@@ -57,16 +81,17 @@ def getSkinsFromGallery(gallery, champName, typeName):
 			dt = datetime.datetime.strptime(date, '%d-%b-%Y')
 		if champSkinLatest[champName] < dt:
 			champSkinLatest[champName] = dt
+		print [formatS(champName), name, str(rp), date, typeName]
 		csvwriter.writerow([formatS(champName), name, str(rp), date, typeName])
 
 
 def getChampSkins(champSkinsSoup, champName):
 	for span in champSkinsSoup.findAll('span'):
 		if span.parent.name == 'h2':
-			if span.string in ['Available', 'Legacy', 'Limited Edition']:
+			if span.string in ['Available', 'Legacy', 'Limited Edition', 'Rare & Limited', 'Legacy Vault']:
 				typeString = nsToS(span.string)
 				getSkinsFromGallery(span.parent.next_sibling.next_sibling, champName, typeString)
-			elif span.string not in ['Screenshots', 'References', 'Chroma Packs', 'Alternate Artwork']:
+			elif span.string not in ['Screenshots', 'References', 'Chroma Packs', 'Alternate Artwork', 'Canceled', 'Cancelled']:
 				print span.string
 
 allChampNames = []
